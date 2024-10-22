@@ -1,0 +1,76 @@
+id: flink-workflow
+version: '1.0'
+specVersion: '0.8'
+name: flink workflow
+description: Create a starter flink job management
+dataInputSchema: schemas/job-schema.json
+events:
+- name: cancelJobEvent
+  source: ""
+  type: move
+functions:
+  - name: 'getJarList'
+    operation: 'specs/flink-api.yaml#getJarList'
+    type: rest
+  - name: 'cancelJob'
+    operation: 'specs/flink-api.yaml#cancelJob'
+    type: rest
+  - name: runFlinkJob
+    operation: specs/flink-api.yaml#submitJobFromJar
+  - name: printMessage
+    type: custom
+    operation: sysout
+start: Run Flink query
+states:
+  - name: Run Flink query
+    type: operation
+    actionMode: sequential
+    actions:
+    - name: Run query
+      functionRef: 
+        refName: getJarList
+    transition: Run Flink Job
+  - name: Run Flink Job
+    type: operation
+    actionMode: sequential
+    actions:
+      - actionDataFilter:
+          toStateData: "${ .jobid}"
+        name: Run Flink Job
+        functionRef:
+          refName: runFlinkJob
+          arguments:
+            jarid: a15fb8f3-288f-4108-b6a8-4ac6f7bbfcbc_flink-streaming-1.0.jar
+            entry-class: com.demo.flink.streaming.StreamingJob
+    transition: waitForEvent
+  - name: waitForEvent
+    type: event
+    onEvents:
+    - eventRefs: 
+       - cancelJobEvent
+      actions:
+        - name: printAfterEvent
+          functionRef:
+            refName: printMessage
+            arguments:
+              message: "${ .jobid.jobid}"
+    timeouts:
+     eventTimeout: PT30S
+    transition: Close Job 
+  - name: Close Job
+    type: operation
+    actionMode: sequential
+    actions:
+    - name: Print message
+      functionRef:
+        refName: printMessage
+        arguments:
+          message: "${ .jobid.jobid}"  
+    - name: close job
+      functionRef: 
+        refName: cancelJob
+        arguments: 
+          jobid: "${ .jobid.jobid}"
+    end:
+        terminate: true
+              

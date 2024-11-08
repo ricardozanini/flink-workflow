@@ -1,0 +1,48 @@
+id: flink-jar
+version: '1.0'
+specVersion: '0.8'
+name: flink workflow
+description: Create a starter flink job management
+dataInputSchema: schemas/job-schema.json
+
+functions:
+  - name: 'getJarList'
+    operation: 'specs/flink-api.yaml#getJarList'
+    type: rest
+  - name: 'uploadJar'
+    operation: 'specs/flink-api.yaml#uploadJar'
+    type: rest
+  - name: printMessage
+    type: custom
+    operation: sysout
+  - name: uploadJar'
+    type: 'custom'
+    operation: 'service:java:org.custom.PrintService::printKogitoProcessId'
+start: Run Flink query
+states:
+  - name: Run Flink query
+    type: operation
+    actionMode: sequential
+    actions:
+    - name: Run query
+      functionRef: 
+        refName: getJarList
+    - name: Print Job ID
+      functionRef:
+        refName: printMessage
+        arguments:
+          message: "${ .jarid}" 
+    transition: Load Jar
+  - name: Load Jar
+    type: operation
+    actionMode: sequential
+    actions:
+      - actionDataFilter:
+          toStateData: "${ .jarstate}"
+        name: Load Jar File
+        functionRef:
+          refName: 'uploadJar'
+          arguments:
+            url: "https://hello.com"
+    end:
+      terminate: true

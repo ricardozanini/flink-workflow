@@ -15,9 +15,9 @@ functions:
   - name: printMessage
     type: custom
     operation: sysout
-  - name: uploadJar'
+  - name: printSendJar'
     type: 'custom'
-    operation: 'service:java:org.custom.PrintService::printKogitoProcessId'
+    operation: 'service:java:org.custom.SendJar::printKogitoProcessId'
 start: Run Flink query
 states:
   - name: Run Flink query
@@ -41,7 +41,7 @@ states:
           toStateData: "${ .jarstate}"
         name: Load Jar File
         functionRef:
-          refName: 'uploadJar'
+          refName: 'printSendJar'
           arguments:
             url: "https://hello.com"
     end:
